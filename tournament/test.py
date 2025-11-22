@@ -15,6 +15,8 @@ from policy import SmartMCTS
 from groups.GroupA.policy import Aha
 from groups.GroupB.policy import Hello
 from groups.GroupC.policy import OhYes
+from groups.GroupG.policy import ClaimEvenPolicy
+from groups.GroupF.policy import MinimaxPolicy
 
 
 def play_single_game(policy_neg: Policy, policy_pos: Policy, render: bool = False):
@@ -126,3 +128,9 @@ if __name__ == "__main__":
 
     print("\nGroup C (OhYes) vs SmartMCTS ----------------------")
     print(run_group_vs_strong(OhYes, SmartMCTS, n_games=N, label="Group C vs SmartMCTS"))
+
+    print("\nGroup D (ClaimEvenPolicy) vs SmartMCTS ----------------------")
+    print(run_group_vs_strong(ClaimEvenPolicy, SmartMCTS, n_games=N, label="Group D vs SmartMCTS")) 
+
+    print("\nGroup F (MinimaxPolicy) vs SmartMCTS ----------------------")
+    print(run_group_vs_strong(MinimaxPolicy, SmartMCTS, n_games=N, label="Group F vs SmartMCTS"))
