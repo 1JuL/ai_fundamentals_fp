@@ -1,106 +1,133 @@
 import numpy as np
+import math
+import random
 from connect4.policy import Policy
 
 
+class MCTSNode:
+    def __init__(self, state: np.ndarray, player: int, parent=None, action=None):
+        self.state = state
+        self.player = player  # Player who just moved to reach this state
+        self.parent = parent
+        self.action = action  # Action that led to this state
+        self.children = []
+        self.visits = 0
+        self.wins = 0  # Wins from the perspective of the player to move at this node
+
+    def is_fully_expanded(self, legal_moves: list[int]) -> bool:
+        return len(self.children) == len(legal_moves)
+
+    def best_child(self, c_param: float = math.sqrt(2)) -> "MCTSNode":
+        choices_weights = [
+            (child.wins / child.visits)
+            + c_param * math.sqrt((math.log(self.visits) / child.visits))
+            for child in self.children
+        ]
+        return self.children[np.argmax(choices_weights)]
+
+    def expand(self, action: int, new_state: np.ndarray, next_player: int) -> "MCTSNode":
+        child = MCTSNode(new_state, next_player, self, action)
+        self.children.append(child)
+        return child
+
+
 class SmartMCTS(Policy):
-    def _init_(self):
-        self.move_order = [3, 2, 4, 1, 5, 0, 6]
-        self.win_value = 10000000
-        self.window_scores = {4: 1000000, 3: 100, 2: 10, 1: 1}
+    def __init__(self, iterations: int = 200, c_param: float = 1.414, max_rollout_depth: int = 20):
+        """
+        iterations: número de iteraciones de MCTS por jugada.
+        max_rollout_depth: profundidad máxima de las simulaciones aleatorias.
+        """
+        self.iterations = iterations
+        self.c_param = c_param
+        self.max_rollout_depth = max_rollout_depth
 
     def mount(self) -> None:
         pass
 
-    def act(self, s: np.ndarray) -> int:
-        current_player = self._get_current_player(s)
-        legal_moves = self._get_legal_moves(s)
 
-        # immediate win check
+    #Gradescope
+    def act(self, s: np.ndarray) -> int:
+        root_player = self._get_current_player(s)
+        legal_moves = self._get_legal_moves(s)
+        if not legal_moves:
+            raise ValueError("No legal moves available")
+
+      
+
+        # 0.1 Jugada ganadora inmediata propia
         for col in legal_moves:
-            temp_board = self._simulate_move(s, col, current_player)
-            if self._get_winner(temp_board) == current_player:
+            tmp_board = self._simulate_move(s, col, root_player)
+            if self._get_winner(tmp_board) == root_player:
                 return col
 
-        best_score = -self.win_value
-        best_col = min(legal_moves, key=lambda c: self.move_order.index(c))
-        ordered_moves = self._order_moves(legal_moves)
-        for col in ordered_moves:
-            new_board = self._simulate_move(s, col, current_player)
-            score = self._minimax(new_board, 7, -self.win_value, self.win_value, False, current_player)
-            if score > best_score:
-                best_score = score
-                best_col = col
-        return best_col
+        # 0.2 Bloquear jugada ganadora inmediata del rival
+        opp = -root_player
+        for col in legal_moves:
+            tmp_board = self._simulate_move(s, col, opp)
+            if self._get_winner(tmp_board) == opp:
+        
+                
+                return col
 
-    def _minimax(self, board: np.ndarray, depth: int, alpha: int, beta: int, maximizing: bool, root_player: int) -> int:
-        winner = self._get_winner(board)
-        if winner != 0:
+        # 1) MCTS
+        root = MCTSNode(s, -root_player)
+
+        for _ in range(self.iterations):
+            node = root
+            state = s.copy()
+
+            # --------- Selection ---------
+            while node.children and not self._is_terminal(state):
+                node = node.best_child(self.c_param)
+                state = self._simulate_move(state, node.action, -node.parent.player)
+
+            # --------- Expansion ---------
+            current_legal = self._get_legal_moves(state)
+            if current_legal and not self._is_terminal(state):
+                action = random.choice(current_legal)
+                new_state = self._simulate_move(state, action, -node.player)
+                node = node.expand(action, new_state, -node.player)
+
+            # --------- Simulation (con límite de profundidad) ---------
+            sim_state = node.state.copy()
+            sim_player = -node.player
+            depth = 0
+            while not self._is_terminal(sim_state) and depth < self.max_rollout_depth:
+                sim_actions = self._get_legal_moves(sim_state)
+                if not sim_actions:
+                    break
+                sim_action = random.choice(sim_actions)
+                sim_state = self._simulate_move(sim_state, sim_action, sim_player)
+                sim_player = -sim_player
+                depth += 1
+
+            # --------- Backpropagation ---------
+            winner = self._get_winner(sim_state)
             if winner == root_player:
-                return self.win_value + depth * 100
-            return -self.win_value - depth * 100
+                result = 1
+            elif winner == -root_player:
+                result = -1
+            else:
+                result = 0
 
-        legal_moves = self._get_legal_moves(board)
-        if depth == 0 or not legal_moves:
-            return self._evaluate(board, root_player)
+            current_node = node
+            while current_node is not None:
+                current_node.visits += 1
+                # Desde la perspectiva de la "side to move" en el nodo:
+                if -current_node.player == root_player:
+                    current_node.wins += result
+                else:
+                    current_node.wins += -result
+                current_node = current_node.parent
 
-        ordered_moves = self._order_moves(legal_moves)
-        turn_player = root_player if maximizing else -root_player
+        # --------- Elegir la mejor acción ---------
+        if not root.children:
+            return int(random.choice(legal_moves))
 
-        if maximizing:
-            value = -self.win_value
-            for col in ordered_moves:
-                new_board = self._simulate_move(board, col, turn_player)
-                score = self._minimax(new_board, depth - 1, alpha, beta, False, root_player)
-                value = max(value, score)
-                alpha = max(alpha, value)
-                if beta <= alpha:
-                    break
-            return value
-        else:
-            value = self.win_value
-            for col in ordered_moves:
-                new_board = self._simulate_move(board, col, turn_player)
-                score = self._minimax(new_board, depth - 1, alpha, beta, True, root_player)
-                value = min(value, score)
-                beta = min(beta, value)
-                if beta <= alpha:
-                    break
-            return value
+        best_child = max(root.children, key=lambda c: c.visits)
+        return best_child.action
 
-    def _evaluate(self, board: np.ndarray, root_player: int) -> int:
-        return self._count_windows(board, root_player) - self._count_windows(board, -root_player)
-
-    def _count_windows(self, board: np.ndarray, player: int) -> int:
-        score = 0
-        # Horizontal
-        for r in range(6):
-            for c in range(4):
-                window = board[r, c : c + 4]
-                score += self._window_score(window, player)
-        # Vertical
-        for c in range(7):
-            for r in range(3):
-                window = board[r : r + 4, c]
-                score += self._window_score(window, player)
-        # Diagonal /
-        for r in range(3):
-            for c in range(4):
-                sub = board[r : r + 4, c : c + 4]
-                window = np.diagonal(sub)
-                score += self._window_score(window, player)
-        # Diagonal \
-        for r in range(3):
-            for c in range(3, 7):
-                window = np.array([board[r + i, c - i] for i in range(4)])
-                score += self._window_score(window, player)
-        return score
-
-    def _window_score(self, window: np.ndarray, player: int) -> int:
-        p_count = np.count_nonzero(window == player)
-        o_count = np.count_nonzero(window == -player)
-        if o_count > 0:
-            return 0
-        return self.window_scores.get(p_count, 0)
+    # ========================= Helpers ========================= #
 
     def _get_winner(self, board: np.ndarray) -> int:
         # Horizontal
@@ -115,25 +142,25 @@ class SmartMCTS(Policy):
                 p = board[r, c]
                 if p != 0 and np.all(board[r : r + 4, c] == p):
                     return p
-        # Diagonal /
+        # Diagonal positiva
         for r in range(3):
             for c in range(4):
                 p = board[r, c]
-                if p != 0 and np.all([board[r + i, c + i] == p for i in range(4)]):
+                if p != 0 and all(board[r + i, c + i] == p for i in range(4)):
                     return p
-        # Diagonal \
+        # Diagonal negativa
         for r in range(3):
             for c in range(3, 7):
                 p = board[r, c]
-                if p != 0 and np.all([board[r + i, c - i] == p for i in range(4)]):
+                if p != 0 and all(board[r + i, c - i] == p for i in range(4)):
                     return p
         return 0
 
+    def _is_terminal(self, board: np.ndarray) -> bool:
+        return self._get_winner(board) != 0 or np.all(board[0] != 0)
+
     def _get_legal_moves(self, board: np.ndarray) -> list[int]:
         return [c for c in range(7) if board[0, c] == 0]
-
-    def _order_moves(self, legal_moves: list[int]) -> list[int]:
-        return sorted(legal_moves, key=lambda c: self.move_order.index(c))
 
     def _simulate_move(self, board: np.ndarray, col: int, player: int) -> np.ndarray:
         new_board = board.copy()
@@ -146,4 +173,5 @@ class SmartMCTS(Policy):
     def _get_current_player(self, board: np.ndarray) -> int:
         num_red = np.count_nonzero(board == -1)
         num_yellow = np.count_nonzero(board == 1)
+        # -1 empieza; si están iguales, le toca a -1
         return -1 if num_red == num_yellow else 1
