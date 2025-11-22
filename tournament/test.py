@@ -17,7 +17,7 @@ from groups.GroupB.policy import Hello
 from groups.GroupC.policy import OhYes
 from groups.GroupG.policy import ClaimEvenPolicy
 from groups.GroupF.policy import MinimaxPolicy
-
+from groups.GroupE.policy import AllisPolicy
 
 def play_single_game(policy_neg: Policy, policy_pos: Policy, render: bool = False):
     state = ConnectState()
@@ -120,17 +120,20 @@ def run_group_vs_strong(group_policy_class, strong_policy_class, n_games: int = 
 if __name__ == "__main__":
     N = 10  # número de partidas por grupo
 
-    print("\nGroup A (Aha) vs SmartMCTS ------------------------")
-    print(run_group_vs_strong(Aha, SmartMCTS, n_games=N, label="Group A vs SmartMCTS"))
+    #print("\nGroup A (Aha) vs SmartMCTS ------------------------")
+    #print(run_group_vs_strong(Aha, SmartMCTS, n_games=N, label="Group A vs SmartMCTS"))
 
-    print("\nGroup B (Hello) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(Hello, SmartMCTS, n_games=N, label="Group B vs SmartMCTS"))
+    #print("\nGroup B (Hello) vs SmartMCTS ----------------------")
+    #print(run_group_vs_strong(Hello, SmartMCTS, n_games=N, label="Group B vs SmartMCTS"))
 
-    print("\nGroup C (OhYes) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(OhYes, SmartMCTS, n_games=N, label="Group C vs SmartMCTS"))
+    #print("\nGroup C (OhYes) vs SmartMCTS ----------------------")
+    #print(run_group_vs_strong(OhYes, SmartMCTS, n_games=N, label="Group C vs SmartMCTS"))
 
-    print("\nGroup D (ClaimEvenPolicy) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(ClaimEvenPolicy, SmartMCTS, n_games=N, label="Group D vs SmartMCTS")) 
+    #print("\nGroup D (ClaimEvenPolicy) vs SmartMCTS ----------------------")
+    #print(run_group_vs_strong(ClaimEvenPolicy, SmartMCTS, n_games=N, label="Group D vs SmartMCTS")) 
 
-    print("\nGroup F (MinimaxPolicy) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(MinimaxPolicy, SmartMCTS, n_games=N, label="Group F vs SmartMCTS"))
+    #print("\nGroup F (MinimaxPolicy) vs SmartMCTS ----------------------")
+    #print(run_group_vs_strong(MinimaxPolicy, SmartMCTS, n_games=N, label="Group F vs SmartMCTS"))
+
+    print("\nGroup E (DefensivePolicy) vs SmartMCTS ----------------------")
+    print(run_group_vs_strong(AllisPolicy, SmartMCTS, n_games=N, label="Group E vs SmartMCTS"))
