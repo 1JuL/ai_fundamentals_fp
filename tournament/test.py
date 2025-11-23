@@ -15,7 +15,7 @@ from policy import SmartMCTS
 from groups.GroupA.policy import Aha
 from groups.GroupB.policy import Hello
 from groups.GroupC.policy import OhYes
-from groups.GroupG.policy import ClaimEvenPolicy
+from groups.GroupD.policy import ClaimEvenPolicy
 from groups.GroupF.policy import MinimaxPolicy
 from groups.GroupE.policy import AllisPolicy
 
