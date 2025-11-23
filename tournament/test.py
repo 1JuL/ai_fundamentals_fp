@@ -3,6 +3,7 @@ import numpy as np
 import multiprocessing
 import random
 import os
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 import inspect  # NUEVO: para detectar si mount recibe timeout
 
@@ -139,23 +140,65 @@ def run_group_vs_strong(group_policy_class, strong_policy_class, n_games: int = 
     return results_dict
 
 
+def verify_MCTS_learning(n_games = 50, n_batchs = 5, rival_policy_class = Aha):
+    results_list = []
+    for k in range(n_batchs):
+        result_dict = run_group_vs_strong(rival_policy_class, SmartMCTS, n_games=n_games, label="Group A vs SmartMCTS")
+        results_list.append(result_dict)
+        print(f"resultado partida {k+1}: {result_dict}")
+        
+    
+    policy = rival_policy_class.__name__
+    plot_learning(results_list, policy, n_games)
+    
+    
+
+def plot_learning(match_results: list[dict], policy_name:str, n_games:int):
+    t_col = []
+    win_rates = []
+    
+    for t, match in enumerate(match_results):
+        agent_wins = match['strong_wins']
+        total_matches = len(match['moves'])
+        win_rate = agent_wins / total_matches
+        t_col.append(t+1)
+        win_rates.append(win_rate)
+    
+    plt.plot(t_col,win_rates, 'r')
+    plt.xticks(t_col)
+    plt.ylim(0,1) # limito la escala porque los valores son de 0 a 1
+    plt.title(f"Tasa de partidas ganadas contra {policy_name}", fontdict={"fontname": "Arial", "fontsize": 16})
+    plt.xlabel(f"Catidad de lotes de {n_games} partidas jugados")
+    plt.ylabel("Tasa de partidas ganadas")  
+    
+    plt.show()  
+        
+
+
+
 if __name__ == "__main__":
-    N = 10  # número de partidas por grupo
+    N_GAMES = 150  # número de partidas por grupo
+    N_BATCH = 5
+    RIVAL_POLICY = Aha
 
-    print("\nGroup A (Aha) vs SmartMCTS ------------------------")
-    print(run_group_vs_strong(Aha, SmartMCTS, n_games=N, label="Group A vs SmartMCTS"))
+    # print("\nGroup A (Aha) vs SmartMCTS ------------------------")
+    # print(run_group_vs_strong(Aha, SmartMCTS, n_games=N, label="Group A vs SmartMCTS"))
 
-    print("\nGroup B (Hello) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(Hello, SmartMCTS, n_games=N, label="Group B vs SmartMCTS"))
+    # print("\nGroup B (Hello) vs SmartMCTS ----------------------")
+    # print(run_group_vs_strong(Hello, SmartMCTS, n_games=N, label="Group B vs SmartMCTS"))
 
-    print("\nGroup C (OhYes) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(OhYes, SmartMCTS, n_games=N, label="Group C vs SmartMCTS"))
+    # print("\nGroup C (OhYes) vs SmartMCTS ----------------------")
+    # print(run_group_vs_strong(OhYes, SmartMCTS, n_games=N, label="Group C vs SmartMCTS"))
 
-    print("\nGroup D (ClaimEvenPolicy) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(ClaimEvenPolicy, SmartMCTS, n_games=N, label="Group D vs SmartMCTS")) 
+    # print("\nGroup D (ClaimEvenPolicy) vs SmartMCTS ----------------------")
+    # print(run_group_vs_strong(ClaimEvenPolicy, SmartMCTS, n_games=N, label="Group D vs SmartMCTS")) 
 
-    print("\nGroup F (MinimaxPolicy) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(MinimaxPolicy, SmartMCTS, n_games=N, label="Group F vs SmartMCTS"))
+    # print("\nGroup F (MinimaxPolicy) vs SmartMCTS ----------------------")
+    # print(run_group_vs_strong(MinimaxPolicy, SmartMCTS, n_games=N, label="Group F vs SmartMCTS"))
 
-    print("\nGroup E (Alli Policy) vs SmartMCTS ----------------------")
-    print(run_group_vs_strong(AllisPolicy, SmartMCTS, n_games=N, label="Group E vs SmartMCTS"))
+    # print("\nGroup E (Alli Policy) vs SmartMCTS ----------------------")
+    # print(run_group_vs_strong(AllisPolicy, SmartMCTS, n_games=N, label="Group E vs SmartMCTS"))
+    
+    print(F"=== Ejecutando prueba de {N_BATCH} lotes de {N_GAMES} patidas contra {RIVAL_POLICY.__name__} ===")
+    verify_MCTS_learning(N_GAMES,N_BATCH, rival_policy_class=Aha)
+    
