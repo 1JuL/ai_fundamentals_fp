@@ -4,6 +4,7 @@ import multiprocessing
 import random
 import os
 from tqdm import tqdm
+import inspect  # NUEVO: para detectar si mount recibe timeout
 
 from connect4.connect_state import ConnectState
 from connect4.policy import Policy
@@ -18,6 +19,27 @@ from groups.GroupC.policy import OhYes
 from groups.GroupD.policy import ClaimEvenPolicy
 from groups.GroupF.policy import MinimaxPolicy
 from groups.GroupE.policy import AllisPolicy
+
+
+# NUEVO:
+# Helper para soportar ambos tipos de mount:
+# - mount(self)
+# - mount(self, time_out)
+def safe_mount(policy: Policy, time_out: int = 10):
+    try:
+        sig = inspect.signature(policy.mount)
+        # si tiene 2 parámetros (self, time_out) => le pasamos timeout
+        if len(sig.parameters) >= 2:
+            policy.mount(time_out)
+        else:
+            policy.mount()
+    except Exception:
+        # si algo raro pasa, intentamos mount sin args para no romper test local
+        try:
+            policy.mount()
+        except Exception:
+            pass
+
 
 def play_single_game(policy_neg: Policy, policy_pos: Policy, render: bool = False):
     state = ConnectState()
@@ -52,10 +74,10 @@ def run_game(group_policy_class, strong_policy_class, starts_first, seed):
     np.random.seed(int.from_bytes(seed, "little", signed=False))
 
     group = group_policy_class()
-    group.mount()
+    safe_mount(group, 10)  # NUEVO: soporta mount con/sin timeout
 
     strong = strong_policy_class()
-    strong.mount()
+    safe_mount(strong, 10)  # NUEVO: SmartMCTS sí usa timeout
 
     if starts_first:
         return play_single_game(group, strong)
