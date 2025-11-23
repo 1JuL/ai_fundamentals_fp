@@ -128,6 +128,9 @@ class SmartMCTS(Policy):
 
         # Elegir acción real con la política derivada de q̂ (π(s) = argmax_a q̂(s,a))
         action = self._select_final_action(s)
+        
+        self._save()
+        
         return action
 
 
