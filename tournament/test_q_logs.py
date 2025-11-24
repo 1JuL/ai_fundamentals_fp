@@ -279,9 +279,9 @@ def plot_learning(match_results, policy_name, n_games):
 # MAIN
 # ============================================================
 if __name__ == "__main__":
-    N_GAMES = 3
-    N_BATCH = 1
-    RIVAL = SmartMCTS
+    N_GAMES = 10
+    N_BATCH = 5
+    RIVAL = AllisPolicy
     Q_PATH = "q_values.parquet"
 
     print(f"=== Running {N_BATCH} batches of {N_GAMES} games vs {RIVAL.__name__} ===")
