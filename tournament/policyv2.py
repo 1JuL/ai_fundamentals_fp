@@ -111,14 +111,17 @@ class SmartMCTS(Policy):
             self.sa_counts = {}
 
     def _save(self) -> None:
+        """
+        Write this process' q_table to a per-pid parquet file:
+        {self.q_path}.pid{pid}.parquet
+        This avoids multiple processes trying to replace the same file.
+        """
         try:
             rows = []
             for k, qv in self.q_table.items():
-                # expected key format: "<state_hex>:<action>"
                 if ":" in k:
                     state_part, a_part = k.rsplit(":", 1)
                 else:
-                    # fallback: store entire key as state and action=-1
                     state_part, a_part = k, -1
                 rows.append({
                     "state": state_part,
@@ -126,16 +129,20 @@ class SmartMCTS(Policy):
                     "q": float(qv),
                     "sa_count": int(self.sa_counts.get(k, 0))
                 })
+
             if rows:
                 df = pd.DataFrame(rows, columns=["state", "action", "q", "sa_count"])
             else:
-                # empty DataFrame with right columns
                 df = pd.DataFrame([], columns=["state", "action", "q", "sa_count"])
-            tmp = f"{self.q_path}.tmp"
+
+            pid = os.getpid()
+            tmp = f"{self.q_path}.pid{pid}.parquet.tmp"
+            out = f"{self.q_path}.pid{pid}.parquet"
+
             df.to_parquet(tmp, index=False)
-            os.replace(tmp, self.q_path)
+            os.replace(tmp, out)  # atomic rename on POSIX
         except Exception as e:
-            print("Warning: parquet save failed:", e)
+            print("Warning: parquet per-pid save failed:", e)
 
     def act(self, s: np.ndarray) -> int:
         # NUEVO: deadline global (para nunca pasar 10s aunque no llamen mount)
@@ -294,3 +301,17 @@ class SmartMCTS(Policy):
 
         self.last_action_source = "blend"
         return best_a if best_a is not None else candidate_moves[0]
+    
+    
+    def reload_global_file(self):
+        if os.path.exists(self.q_path):
+            try:
+                df = pd.read_parquet(self.q_path)
+                for _, row in df.iterrows():
+                    state_key = str(row["state"])
+                    a = int(row["action"])
+                    sa_key = f"{state_key}:{a}"
+                    self.q_table[sa_key] = float(row["q"])
+                    self.sa_counts[sa_key] = int(row.get("sa_count", 1))
+            except Exception as e:
+                print("Warning: reload_global_file failed:", e)

@@ -6,6 +6,7 @@ import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import inspect
+import pandas as pd
 
 from connect4.connect_state import ConnectState
 from connect4.policy import Policy
@@ -18,6 +19,80 @@ from groups.GroupC.policy import OhYes
 from groups.GroupD.policy import ClaimEvenPolicy
 from groups.GroupF.policy import MinimaxPolicy
 from groups.GroupE.policy import AllisPolicy
+
+
+# add near your imports in test.py
+import glob
+
+def merge_q_parquets(target_qpath: str, remove_pid_files: bool = True) -> None:
+    """
+    Merge existing target_qpath (if present) and all per-pid files:
+      {target_qpath}.pid*.parquet
+    For each (state,action) we compute:
+      combined_count = sum(counts)
+      combined_q = sum(q_i * count_i) / combined_count
+    Writes atomically to target_qpath.
+    """
+    all_dfs = []
+
+    # load existing global q if present
+    if os.path.exists(target_qpath):
+        try:
+            df_base = pd.read_parquet(target_qpath)
+            if not df_base.empty:
+                all_dfs.append(df_base)
+        except Exception as e:
+            print("Warning: failed reading existing global q file:", e)
+
+    pid_pattern = f"{target_qpath}.pid*.parquet"
+    pid_files = glob.glob(pid_pattern)
+    for pf in pid_files:
+        try:
+            df_pf = pd.read_parquet(pf)
+            if not df_pf.empty:
+                all_dfs.append(df_pf)
+        except Exception as e:
+            print(f"Warning: failed reading pid file {pf}: {e}")
+
+    if not all_dfs:
+        # nothing to merge; ensure there is an (empty) global file if missing
+        if not os.path.exists(target_qpath):
+            df_empty = pd.DataFrame([], columns=["state", "action", "q", "sa_count"])
+            tmp = f"{target_qpath}.tmp"
+            df_empty.to_parquet(tmp, index=False)
+            os.replace(tmp, target_qpath)
+        return
+
+    df_all = pd.concat(all_dfs, ignore_index=True)
+    df_all["action"] = df_all["action"].astype(int)
+    df_all["q"] = df_all["q"].astype(float)
+    df_all["sa_count"] = df_all["sa_count"].astype(int)
+
+    # group and compute weighted average
+    grouped = (
+        df_all.groupby(["state", "action"], as_index=False)
+        .apply(lambda g: pd.Series({
+            "q": (g["q"] * g["sa_count"]).sum() / g["sa_count"].sum(),
+            "sa_count": int(g["sa_count"].sum())
+        }))
+        .reset_index()
+    )
+
+    grouped = grouped[["state", "action", "q", "sa_count"]]
+
+    tmp = f"{target_qpath}.tmp"
+    grouped.to_parquet(tmp, index=False)
+    os.replace(tmp, target_qpath)
+    print(f"Merged {len(pid_files)} pid-files into {target_qpath} (rows={len(grouped)})")
+
+    if remove_pid_files:
+        for pf in pid_files:
+            try:
+                os.remove(pf)
+            except Exception:
+                pass
+
+
 
 
 # ============================================================
@@ -44,12 +119,9 @@ _worker_strong_policy = None  # persistent MCTS inside the worker
 
 
 def init_worker(strong_policy_class, q_path):
-    """
-    This runs ONCE per worker process.
-    We create ONE persistent SmartMCTS per worker => Q-learning actually works.
-    """
     global _worker_strong_policy
     _worker_strong_policy = strong_policy_class(q_path=q_path)
+    _worker_strong_policy._autosave_parquet = True
     safe_mount(_worker_strong_policy, 10)
 
 
@@ -169,10 +241,18 @@ def verify_MCTS_learning(n_games=50, n_batchs=5, rival_policy_class=Aha, q_path=
             q_path=q_path,
             label=f"Batch {k+1}/{n_batchs}"
         )
+
+        # MERGE worker pid files into the global q_values.parquet
+        try:
+            merge_q_parquets(q_path, remove_pid_files=True)
+        except Exception as e:
+            print("Warning: merge_q_parquets() failed:", e)
+
         results_list.append(result)
         print(f"Batch {k+1} result: {result}")
 
     plot_learning(results_list, rival_policy_class.__name__, n_games)
+
 
 
 def plot_learning(match_results, policy_name, n_games):
@@ -199,9 +279,9 @@ def plot_learning(match_results, policy_name, n_games):
 # MAIN
 # ============================================================
 if __name__ == "__main__":
-    N_GAMES = 10
-    N_BATCH = 3
-    RIVAL = Aha
+    N_GAMES = 3
+    N_BATCH = 1
+    RIVAL = SmartMCTS
     Q_PATH = "q_values.parquet"
 
     print(f"=== Running {N_BATCH} batches of {N_GAMES} games vs {RIVAL.__name__} ===")
