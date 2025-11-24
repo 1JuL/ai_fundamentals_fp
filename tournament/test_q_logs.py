@@ -10,7 +10,7 @@ import pandas as pd
 
 from connect4.connect_state import ConnectState
 from connect4.policy import Policy
-from policyv2 import SmartMCTS
+from policy import SmartMCTS
 
 # Groups (random/baseline opponents)
 from groups.GroupA.policy import Aha

@@ -142,7 +142,7 @@ def run_group_vs_strong(group_policy_class, strong_policy_class, n_games: int = 
 
 def verify_MCTS_learning(n_games = 50, n_batches = 5, rival_policy_class = Aha):
     results_list = []
-    for k in range(n_batchs):
+    for k in range(n_batches):
         result_dict = run_group_vs_strong(rival_policy_class, SmartMCTS, n_games=n_games, label="Group A vs SmartMCTS")
         results_list.append(result_dict)
         print(f"resultado partida {k+1}: {result_dict}")
@@ -178,8 +178,8 @@ def plot_learning(match_results: list[dict], policy_name:str, n_games:int):
 
 
 if __name__ == "__main__":
-    N_GAMES = 50  # número de partidas por grupo
-    N_BATCH = 10
+    N_GAMES = 30  # número de partidas por grupo
+    N_BATCH = 3
     RIVAL_POLICY = Aha
 
     # print("\nGroup A (Aha) vs SmartMCTS ------------------------")

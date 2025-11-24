@@ -1,7 +1,9 @@
 # Proyecto Final Fundamentos de IA
+
 # SmartMCTS Connect4 Policy
 
 Este repositorio contiene una policy híbrida para Connect4 basada en:
+
 - Capa táctica (ganar/bloquear inmediato).
 - Reglas tipo Allis (odd threats / claim-even / follow-ups).
 - Poda de movimientos con `useful_cols`.
@@ -12,15 +14,16 @@ La versión actual permite evaluar aprendizaje en batches locales.
 
 ---
 
-
 ## Integrantes
- - David Esteban Diaz Vargas
- - Diego Norberto Diaz Algarin
- - Juan Pablo Moreno Patarroyo
+
+- David Esteban Diaz Vargas
+- Diego Norberto Diaz Algarin
+- Juan Pablo Moreno Patarroyo
 
 ## Archivos principales
 
 - `policyv2.py` / `policy.py`: implementación de la clase **SmartMCTS** (policy final).
+  > Nota: La policy final se encuentra en el archivo policy.py, el archivo policy_v1.py es una version preliminar y el archivo policyv2.py es igual a policy.py
 - `helpers.py`: utilidades Allis + heurística minimax + poda.
 - `mctsnode.py`: nodo MCTS.
 - `board_utils.py`: reglas del juego (winner, legales, transición).
@@ -29,16 +32,21 @@ La versión actual permite evaluar aprendizaje en batches locales.
 - `test.py`: script local para correr partidas por batches y visualizar aprendizaje.
 
 > Nota: SmartMCTS guarda la Q-table en `q_values.parquet`.
+>
+> #### Es importante que los 6 archivos se encuentren en el mismo directorio para que los imports funcionen correctamente
 
 ---
 
 ## Requisitos
 
 ### Python
+
 - Python 3.9+ recomendado.
 
 ### Librerías externas
+
 Instala con pip:
 
 ```bash
 pip install numpy pandas tqdm matplotlib pyarrow
+```
