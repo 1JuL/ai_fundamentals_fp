@@ -31,6 +31,8 @@ La versión actual permite evaluar aprendizaje en batches locales.
 > Nota: SmartMCTS guarda la Q-table en `q_values.parquet`.
 
 ---
+## Pruebas
+Para realizar las pruebas por favor dirigirse a la carpeta tournaments y hacer python  test_q_logs.py
 
 ## Requisitos
 
@@ -42,7 +44,6 @@ Instala con pip:
 
 ```bash
 pip install numpy pandas tqdm matplotlib pyarrow
-´´´
 
-## Pruebas
-Para realizar las pruebas por favor dirigirse a la carpeta tournaments y hacer python  test_q_logs.py
+
+
