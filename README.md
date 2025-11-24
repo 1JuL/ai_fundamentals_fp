@@ -29,13 +29,17 @@ La versión actual permite evaluar aprendizaje en batches locales.
 - `board_utils.py`: reglas del juego (winner, legales, transición).
 - `tactical_search.py`: minimax rápido con alpha-beta.
 - `gpi_core.py`: núcleo de GPI (trials, update Q, mini-MCTS, selección final).
-- `test.py`: script local para correr partidas por batches y visualizar aprendizaje.
+- `test_q_logs.py`: script local para correr partidas por batches y visualizar aprendizaje.
 
 > Nota: SmartMCTS guarda la Q-table en `q_values.parquet`.
 >
 > #### Es importante que los 6 archivos se encuentren en el mismo directorio para que los imports funcionen correctamente
 
 ---
+
+## Pruebas
+
+Para realizar las pruebas por favor dirigirse a la carpeta tournaments y hacer python test_q_logs.py
 
 ## Requisitos
 
