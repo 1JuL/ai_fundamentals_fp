@@ -12,6 +12,12 @@ La versión actual permite evaluar aprendizaje en batches locales.
 
 ---
 
+
+## Integrantes
+ - David Esteban Diaz Vargas
+ - Diego Norberto Diaz Algarin
+ - Juan Pablo Moreno Patarroyo
+
 ## Archivos principales
 
 - `policyv2.py` / `policy.py`: implementación de la clase **SmartMCTS** (policy final).
