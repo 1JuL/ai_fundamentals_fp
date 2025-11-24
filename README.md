@@ -42,6 +42,7 @@ Instala con pip:
 
 ```bash
 pip install numpy pandas tqdm matplotlib pyarrow
+´´´
 
 ## Pruebas
 Para realizar las pruebas por favor dirigirse a la carpeta tournaments y hacer python  test_q_logs.py
