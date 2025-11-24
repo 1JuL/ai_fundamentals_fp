@@ -9,7 +9,7 @@ import inspect
 
 from connect4.connect_state import ConnectState
 from connect4.policy import Policy
-from policy import SmartMCTS
+from policyv2 import SmartMCTS
 
 # Groups (random/baseline opponents)
 from groups.GroupA.policy import Aha
@@ -199,8 +199,8 @@ def plot_learning(match_results, policy_name, n_games):
 # MAIN
 # ============================================================
 if __name__ == "__main__":
-    N_GAMES = 150
-    N_BATCH = 5
+    N_GAMES = 10
+    N_BATCH = 3
     RIVAL = Aha
     Q_PATH = "q_values.parquet"
 
