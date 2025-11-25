@@ -140,7 +140,7 @@ def run_group_vs_strong(group_policy_class, strong_policy_class, n_games: int = 
     return results_dict
 
 
-def verify_MCTS_learning(n_games = 50, n_batches = 5, rival_policy_class = Aha):
+def verify_MCTS_learning(rival_policy_class, n_games = 50, n_batches = 5):
     results_list = []
     for k in range(n_batches):
         result_dict = run_group_vs_strong(rival_policy_class, SmartMCTS, n_games=n_games, label="Group A vs SmartMCTS")
@@ -149,30 +149,92 @@ def verify_MCTS_learning(n_games = 50, n_batches = 5, rival_policy_class = Aha):
         
     
     policy = rival_policy_class.__name__
-    plot_learning(results_list, policy, n_games)
+    
+    return results_list, policy, n_games
+    
+    
     
     
 
-def plot_learning(match_results: list[dict], policy_name:str, n_games:int):
-    t_col = []
-    win_rates = []
+def plot_learning(match_results: list[list[dict]], n_games:int, policy_names:list[str]):
     
-    for t, match in enumerate(match_results):
-        agent_wins = match['strong_wins']
-        total_matches = len(match['moves'])
-        win_rate = agent_wins / total_matches
-        t_col.append(t+1)
-        win_rates.append(win_rate)
+    plot_colors = ['r', 'g', 'b', ] #pal color de las lineas
+    t_policies_col = [] #lista que almacena listas de t de cada enfrentamiento de policies
+    win_policies_rates = [] # lo mismo pero con win_rates
+    for policy in match_results: # match results es una lista de listas de diccionarios, es decir, una lista de juegos con una politica
+        t_col = []
+        win_rates = []
+        for t, match in enumerate(policy): # policy es una lista de diccionarios
+            agent_wins = match['strong_wins']
+            total_matches = len(match['moves'])
+            win_rate = agent_wins / total_matches
+            print(f"Win rate for t={t+1}: {win_rate}")
+            t_col.append(t+1)
+            win_rates.append(win_rate)
+        t_policies_col.append(t_col)
+        win_policies_rates.append(win_rates)
     
-    plt.plot(t_col,win_rates, 'r')
-    plt.xticks(t_col)
+    # este ciclo itera sobre las listas de listas de resultados para plotear cada una
+    for t, winrate, color, policy_name in zip(t_policies_col, win_policies_rates, plot_colors, policy_names):
+        plt.plot(t,winrate, color, label = policy_name)
+        
+        
+    plt.xticks(t_policies_col[0])
     plt.ylim(0,1) # limito la escala porque los valores son de 0 a 1
-    plt.title(f"Tasa de partidas ganadas contra {policy_name}", fontdict={"fontname": "Arial", "fontsize": 16})
-    plt.xlabel(f"Catidad de lotes de {n_games} partidas jugados")
-    plt.ylabel("Tasa de partidas ganadas")  
+    plt.title(f"Win-rate against random and Minimax policy", fontdict={"fontname": "Arial", "fontsize": 16})
+    plt.xlabel(f"Batch (each = {n_games} games)")
+    plt.ylabel("Win-rate")  
     plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend()
     
     plt.show()  
+
+def plot_agent_comparison(results_policy_A: dict, results_policy_B: dict):
+    categories = ['Wins', 'Losses', 'Draws']
+
+    agent_wins_A = results_policy_A["strong_wins"]
+    agent_losses_A = results_policy_A["group_wins"]
+    draws_A = results_policy_A["draws"]
+
+    agent_wins_B = results_policy_B["strong_wins"]
+    agent_losses_B = results_policy_B["group_wins"]
+    draws_B = results_policy_B["draws"]
+
+    values_A = [agent_wins_A, agent_losses_A, draws_A]
+    values_B = [agent_wins_B, agent_losses_B, draws_B]
+
+
+    x = np.arange(len(categories)) # [0,1,2]
+    width = 0.35 # ancho de barra
+
+    plt.figure(figsize=(10, 5))
+
+    # Barras
+    bars_A = plt.bar(x - width/2, values_A, width, label="Contra Aha")
+    bars_B = plt.bar(x + width/2, values_B, width, label="Contra Minimax")
+
+    # Títulos
+    plt.title("Comparación de desempeño del agente contra politica aleatoria y Minimax", fontsize=16)
+    plt.ylabel("Partidas jugadas", fontsize=14)
+    plt.xticks(x+3, categories, fontsize=12)
+
+    # Leyenda
+    plt.legend(fontsize=12)
+
+    # Líneas de valores encima de cada barra (opcional)
+    for bars in [bars_A, bars_B]:
+        for bar in bars:
+            height = bar.get_height()
+            plt.text(
+                bar.get_x() + bar.get_width()/2, 
+                height + 0.1, 
+                f'{int(height)}',
+                ha='center', va='bottom', fontsize=10
+            )
+
+    plt.tight_layout()
+    plt.show()
+
         
 
 
