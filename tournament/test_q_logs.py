@@ -19,6 +19,7 @@ from groups.GroupC.policy import OhYes
 from groups.GroupD.policy import ClaimEvenPolicy
 from groups.GroupF.policy import MinimaxPolicy
 from groups.GroupE.policy import AllisPolicy
+from groups.GroupG.policy import ALjuriRuiz
 
 
 # add near your imports in test.py
@@ -279,9 +280,9 @@ def plot_learning(match_results, policy_name, n_games):
 # MAIN
 # ============================================================
 if __name__ == "__main__":
-    N_GAMES = 10
-    N_BATCH = 5
-    RIVAL = AllisPolicy
+    N_GAMES = 25
+    N_BATCH = 20
+    RIVAL = MinimaxPolicy
     Q_PATH = "q_values.parquet"
 
     print(f"=== Running {N_BATCH} batches of {N_GAMES} games vs {RIVAL.__name__} ===")
